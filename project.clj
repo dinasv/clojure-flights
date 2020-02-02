@@ -12,5 +12,8 @@
                  [org.clojure/tools.logging "0.4.0"]
                  [environ "1.1.0"]
                  [org.clojure/data.json "0.2.6"]
-                 [com.stuartsierra/component "0.3.2"]]
-  :repl-options {:init-ns src.core})
+                 [com.stuartsierra/component "0.3.2"]
+                 [overtone/at-at "1.2.0"]]
+  :repl-options {:init-ns src.core}
+  :main main
+  :aot [main])

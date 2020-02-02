@@ -1,29 +1,26 @@
 (ns scheduler
-  (:require [com.stuartsierra.component :as component])
-  (:import (org.apache.kafka.clients.producer KafkaProducer ProducerRecord)))
+  (:require [com.stuartsierra.component :as component]
+            [flights-api]
+            [producer]
+            [chime :refer [chime-ch]]
+            [overtone.at-at :as at]))
 
-(defn send-msg [producer topic msg-bytes]
-  (.send producer (ProducerRecord. topic msg-bytes)))
-
-(defrecord Scheduler [flights-api producer]
+(defrecord Scheduler
+  [producer flights-api]
   ;; Implement the Lifecycle protocol
   component/Lifecycle
 
   (start [this]
     (println ";; Starting scheduler")
-    (while true
-      (do
-        (let [flight-bytes flights-api/request
-              topic "topic"
-              sleep 100000]
-          (send-msg producer topic flight-bytes)
-          (Thread/sleep sleep))))
 
-    (assoc this :flights-api flights-api :producer producer))
+    (let [pool (at/mk-pool)]
+      (at/every 1000 #(producer/send-msg producer "topic" (flights-api/request flights-api)) pool))
+
+    this)
 
   (stop [this]
     (println ";; Stopping scheduler")
-    (assoc this :flights-api nil :producer nil)))
+    this))
 
 
 (defn make-scheduler

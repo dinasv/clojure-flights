@@ -1,24 +1,34 @@
 (ns system
   (:require [com.stuartsierra.component :as component]
-            [info.producer :as producer]
-            [info.scheduler :as scheduler]
-            )
-  (:import (org.apache.kafka.common.serialization ByteArraySerializer)))
+            [producer]
+            [scheduler]))
 
-(def port "localhost:9092")
+(def ^:redef system
+  "Holds our system."
+  nil)
 
-(def producer-cfg {"value.serializer"  ByteArraySerializer
-                   "key.serializer"    ByteArraySerializer
-                   "bootstrap.servers" port})
-
-(defn system [producer-cfg]
+(defn build-system [producer-cfg]
   (-> (component/system-map
-      :flights-api (flights-api/make-api)
-      :producer (producer/make-producer producer-cfg)
-      :scheduler (scheduler/make-scheduler))
-      (component/system-using {:scheduler [:flights-api :producer]})))
+        :api (flights-api/make-api)
+        :prod (producer/make-producer producer-cfg)
+        :scheduler (scheduler/make-scheduler))
+      (component/system-using {:scheduler {:flights-api :api
+                                           :producer    :prod}})))
+
+(defn init-system
+  [producer-cfg]
+  (let [sys (build-system producer-cfg)]
+    (alter-var-root #'system (constantly sys))))
+
+(defn stop!
+  "Stop system"
+  []
+  (alter-var-root #'system component/stop-system))
+
+(defn start!
+  "Start system"
+  []
+  (alter-var-root #'system component/start-system)
+  (println "System started"))
 
 
-(defn -main [& args]
-  (system producer-cfg)
-  (system component/start-system))

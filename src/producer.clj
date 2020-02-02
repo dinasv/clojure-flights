@@ -4,17 +4,21 @@
   (:import [org.apache.kafka.clients.producer KafkaProducer ProducerRecord])
   (:gen-class))
 
+(defn send-msg [producer topic msg-bytes]
+  (println ";; Sending message")
+  (.send (:producer producer) (ProducerRecord. topic msg-bytes)))
+
 (defrecord Producer [cfg]
   ;; Implement the Lifecycle protocol
   component/Lifecycle
 
   (start [this]
     (println ";; Starting producer")
-    ((assoc this :producer (KafkaProducer. cfg))))
+    (assoc this :producer (KafkaProducer. cfg)))
 
   (stop [this]
     (println ";; Stopping producer")
-    (let [p (this :producer)]
+    (let [p (:producer this)]
        (.close p))
     (assoc this :producer nil)))
 
